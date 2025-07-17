@@ -4,76 +4,119 @@ import json
 
 FILENAME = "data.json"
 
-def load_data():
-    try:
-        with open(FILENAME, "r") as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+class GestorCRUD:
+    def cargar_datos(self) -> dict:
+        try:
+            with open(FILENAME, "r") as file:
+                return json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
 
-def save_data(data):
-    with open(FILENAME, "w") as file:
-        json.dump(data, file, indent=4)
+    def guardar_datos(self, datos: dict):
+        with open(FILENAME, "w") as file:
+            json.dump(datos, file, indent=4)
 
-def create_entry():
-    key = entry_key.get()
-    value = entry_value.get()
-    if key and value:
-        data = load_data()
-        if key in data:
-            messagebox.showwarning("Advertencia", "La clave ya existe.")
+    def crear_entrada(self, clave: str, valor: str):
+        datos = self.cargar_datos()
+        if clave in datos:
+            raise ValueError("La clave ya existe.")
+        datos[clave] = valor
+        self.guardar_datos(datos)
+
+    def leer_entrada(self, clave: str) -> str:
+        datos = self.cargar_datos()
+        if clave in datos:
+            return datos[clave]
         else:
-            data[key] = value
-            save_data(data)
-            messagebox.showinfo("Éxito", "Entrada creada correctamente.")
-    else:
-        messagebox.showerror("Error", "Llena ambos campos.")
+            raise KeyError("Clave no encontrada.")
 
-def read_entry():
-    key = entry_key.get()
-    data = load_data()
-    if key in data:
-        messagebox.showinfo("Información", f"{key}: {data[key]}")
-    else:
-        messagebox.showerror("Error", "Clave no encontrada.")
+    def actualizar_entrada(self, clave: str, valor: str):
+        datos = self.cargar_datos()
+        if clave in datos:
+            datos[clave] = valor
+            self.guardar_datos(datos)
+        else:
+            raise KeyError("Clave no encontrada.")
 
-def update_entry():
-    key = entry_key.get()
-    value = entry_value.get()
-    data = load_data()
-    if key in data:
-        data[key] = value
-        save_data(data)
-        messagebox.showinfo("Éxito", "Entrada actualizada correctamente.")
-    else:
-        messagebox.showerror("Error", "Clave no encontrada.")
+    def eliminar_entrada(self, clave: str):
+        datos = self.cargar_datos()
+        if clave in datos:
+            del datos[clave]
+            self.guardar_datos(datos)
+        else:
+            raise KeyError("Clave no encontrada.")
 
-def delete_entry():
-    key = entry_key.get()
-    data = load_data()
-    if key in data:
-        del data[key]
-        save_data(data)
-        messagebox.showinfo("Éxito", "Entrada eliminada correctamente.")
-    else:
-        messagebox.showerror("Error", "Clave no encontrada.")
 
-# Configurar la GUI
-root = tk.Tk()
-root.title("CRUD con Tkinter")
-root.geometry("300x250")
+class Aplicación:
+    def __init__(self):
+        self.raíz = tk.Tk()
+        self.raíz.title("CRUD con Tkinter")
+        self.raíz.geometry("300x250")
 
-tk.Label(root, text="Clave:").pack()
-entry_key = tk.Entry(root)
-entry_key.pack()
+        self.gestor = GestorCRUD()
 
-tk.Label(root, text="Valor:").pack()
-entry_value = tk.Entry(root)
-entry_value.pack()
+        tk.Label(self.raíz, text="Clave:").pack()
+        self.entrada_clave = tk.Entry(self.raíz)
+        self.entrada_clave.pack()
 
-tk.Button(root, text="Crear", command=create_entry).pack()
-tk.Button(root, text="Leer", command=read_entry).pack()
-tk.Button(root, text="Actualizar", command=update_entry).pack()
-tk.Button(root, text="Eliminar", command=delete_entry).pack()
+        tk.Label(self.raíz, text="Valor:").pack()
+        self.entrada_valor = tk.Entry(self.raíz)
+        self.entrada_valor.pack()
 
-root.mainloop()
+        self.btn_crear = tk.Button(self.raíz, text="Crear", command=self.crear)
+        self.btn_crear.pack()
+
+        self.btn_leer = tk.Button(self.raíz, text="Leer", command=self.leer)
+        self.btn_leer.pack()
+
+        self.btn_actualizar = tk.Button(self.raíz, text="Actualizar", command=self.actualizar)
+        self.btn_actualizar.pack()
+
+        self.btn_eliminar = tk.Button(self.raíz, text="Eliminar", command=self.eliminar)
+        self.btn_eliminar.pack()
+
+    def crear(self):
+        clave = self.entrada_clave.get()
+        valor = self.entrada_valor.get()
+        if clave and valor:
+            try:
+                self.gestor.crear_entrada(clave, valor)
+                messagebox.showinfo("Éxito", "Entrada creada correctamente.")
+            except ValueError as e:
+                messagebox.showwarning("Advertencia", str(e))
+        else:
+            messagebox.showerror("Error", "Llena ambos campos.")
+
+    def leer(self):
+        clave = self.entrada_clave.get()
+        try:
+            valor = self.gestor.leer_entrada(clave)
+            messagebox.showinfo("Información", f"{clave}: {valor}")
+        except KeyError as e:
+            messagebox.showerror("Error", str(e))
+
+    def actualizar(self):
+        clave = self.entrada_clave.get()
+        valor = self.entrada_valor.get()
+        try:
+            self.gestor.actualizar_entrada(clave, valor)
+            messagebox.showinfo("Éxito", "Entrada actualizada correctamente.")
+        except KeyError as e:
+            messagebox.showerror("Error", str(e))
+
+    def eliminar(self):
+        clave = self.entrada_clave.get()
+        try:
+            self.gestor.eliminar_entrada(clave)
+            messagebox.showinfo("Éxito", "Entrada eliminada correctamente.")
+        except KeyError as e:
+            messagebox.showerror("Error", str(e))
+
+    def iniciar(self):
+        self.raíz.mainloop()
+
+
+# Ejecutar la aplicación
+if __name__ == "__main__":
+    app = Aplicación()
+    app.iniciar()
